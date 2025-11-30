@@ -514,11 +514,16 @@ const copyBillingDetailsToCustomer = async (
     ? (sanitizeAddress(address) as unknown as any)
     : null;
 
+  // Convert payment method to JSON-compatible object for Supabase
+  const paymentMethodJson = payment_method[payment_method.type ?? "card"]
+    ? JSON.parse(JSON.stringify(payment_method[payment_method.type ?? "card"]))
+    : null;
+
   const { error } = await supabaseAdmin
     .from("users")
     .update({
       billing_address: billingAddressJson,
-      payment_method: payment_method[payment_method.type ?? "card"] ?? null,
+      payment_method: paymentMethodJson,
     })
     .eq("id", uuid);
 
