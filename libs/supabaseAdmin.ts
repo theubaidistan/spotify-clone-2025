@@ -536,10 +536,8 @@ const manageSubscriptionStatusChange = async (
     expand: ["default_payment_method"],
   });
 
-  // Use subscription.created as fallback if current_period_start/end is missing
-  const createdDate = subscription.created
-    ? toDateTime(subscription.created)
-    : new Date();
+  // Safe conversion of dates
+  const createdDate = toDateTime(subscription.created) ?? new Date();
   const fallbackStart = createdDate.toISOString();
   const fallbackEnd = new Date(
     createdDate.getTime() + 30 * 24 * 60 * 60 * 1000
@@ -555,33 +553,21 @@ const manageSubscriptionStatusChange = async (
       quantity: subscription.items.data[0].quantity ?? 1,
 
       cancel_at_period_end: subscription.cancel_at_period_end,
-      cancel_at: subscription.cancel_at
-        ? toDateTime(subscription.cancel_at)?.toISOString()
-        : null,
-      canceled_at: subscription.canceled_at
-        ? toDateTime(subscription.canceled_at)?.toISOString()
-        : null,
+      cancel_at: toDateTime(subscription.cancel_at)?.toISOString() ?? null,
+      canceled_at: toDateTime(subscription.canceled_at)?.toISOString() ?? null,
 
-      current_period_start: subscription.current_period_start
-        ? toDateTime(subscription.current_period_start)?.toISOString()
-        : fallbackStart,
-      current_period_end: subscription.current_period_end
-        ? toDateTime(subscription.current_period_end)?.toISOString()
-        : fallbackEnd,
+      current_period_start:
+        toDateTime(subscription.current_period_start)?.toISOString() ??
+        fallbackStart,
+      current_period_end:
+        toDateTime(subscription.current_period_end)?.toISOString() ??
+        fallbackEnd,
 
-      created: subscription.created
-        ? toDateTime(subscription.created)?.toISOString()
-        : fallbackStart,
-      ended_at: subscription.ended_at
-        ? toDateTime(subscription.ended_at)?.toISOString()
-        : null,
+      created: toDateTime(subscription.created)?.toISOString() ?? fallbackStart,
+      ended_at: toDateTime(subscription.ended_at)?.toISOString() ?? null,
 
-      trial_start: subscription.trial_start
-        ? toDateTime(subscription.trial_start)?.toISOString()
-        : null,
-      trial_end: subscription.trial_end
-        ? toDateTime(subscription.trial_end)?.toISOString()
-        : null,
+      trial_start: toDateTime(subscription.trial_start)?.toISOString() ?? null,
+      trial_end: toDateTime(subscription.trial_end)?.toISOString() ?? null,
     };
 
   const { error } = await supabaseAdmin
