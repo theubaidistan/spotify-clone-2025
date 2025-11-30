@@ -174,10 +174,10 @@ export async function POST(req: Request) {
   const { price } = await req.json();
 
   try {
-    const cookieStore = cookies(); // ✅ remove await
+    const cookieStore = cookies(); // ✅ correct
 
     const supabase = createRouteHandlerClient({
-      cookies: () => Promise.resolve(cookieStore), // ✅ wrap in Promise
+      cookies: () => Promise.resolve(cookieStore), // ✅ correct
     });
 
     const {
@@ -193,16 +193,16 @@ export async function POST(req: Request) {
 
     // Full PAGE redirect checkout (hosted)
     const session = await stripe.checkout.sessions.create({
-      customer,
+      customer: customer.id, // make sure this is the ID, not full object
       mode: "subscription",
-      ui_mode: "hosted", // <── IMPORTANT (NOT embedded)
-      line_items: [{ price: price.id, quantity: 1 }],
-
+      payment_method_types: ["card"],
       billing_address_collection: "required",
       allow_promotion_codes: true,
-
-      subscription_data: { trial_from_plan: true },
-
+      line_items: [{ price: price.id, quantity: 1 }],
+      subscription_data: {
+        // TS workaround: cast to any to allow trial_from_plan
+        trial_from_plan: true as any,
+      },
       success_url: `${getURL()}/account?success=true`,
       cancel_url: `${getURL()}/account?canceled=true`,
     });
