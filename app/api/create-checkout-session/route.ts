@@ -171,13 +171,13 @@ import { getURL } from "@/libs/helpers";
 import { createOrRetrieveCustomer } from "@/libs/supabaseAdmin";
 
 export async function POST(req: Request) {
-  const { price } = await req.json();
-
   try {
-    const cookieStore = cookies(); // ✅ correct
+    const { price } = await req.json();
+
+    const cookieStore = cookies();
 
     const supabase = createRouteHandlerClient({
-      cookies: () => Promise.resolve(cookieStore), // ✅ correct
+      cookies: () => Promise.resolve(cookieStore),
     });
 
     const {
@@ -191,17 +191,19 @@ export async function POST(req: Request) {
       email: user.email || "",
     });
 
-    // Full PAGE redirect checkout (hosted)
+    // Create a Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      customer: customer.id, // make sure this is the ID, not full object
+      customer: customer.id, // use customer ID
       mode: "subscription",
       payment_method_types: ["card"],
       billing_address_collection: "required",
       allow_promotion_codes: true,
-      line_items: [{ price: price.id, quantity: 1 }],
+      line_items: [{ price: price.id, quantity: 1 }], // remove trial_from_plan
+      // Optional: subscription_data if you want metadata or trial period set via price object
       subscription_data: {
-        // TS workaround: cast to any to allow trial_from_plan
-        trial_from_plan: true as any,
+        metadata: {
+          userId: user.id,
+        },
       },
       success_url: `${getURL()}/account?success=true`,
       cancel_url: `${getURL()}/account?canceled=true`,
