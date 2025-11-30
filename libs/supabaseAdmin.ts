@@ -502,17 +502,22 @@ const copyBillingDetailsToCustomer = async (
 
   if (!name && !phone && !address) return;
 
-  // Fix: convert null to undefined for Stripe update
+  // Update Stripe customer
   await stripe.customers.update(customer, {
     name: name ?? undefined,
     phone: phone ?? undefined,
     address: address ? sanitizeAddress(address) : undefined,
   });
 
+  // Convert address to JSON-compatible object for Supabase
+  const billingAddressJson = address
+    ? (sanitizeAddress(address) as unknown as any)
+    : null;
+
   const { error } = await supabaseAdmin
     .from("users")
     .update({
-      billing_address: address ?? null,
+      billing_address: billingAddressJson,
       payment_method: payment_method[payment_method.type ?? "card"] ?? null,
     })
     .eq("id", uuid);
