@@ -410,6 +410,7 @@ export const supabaseAdmin = createClient<Database>(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 );
 
+// Upsert a product into Supabase
 const upsertProductRecord = async (product: Stripe.Product) => {
   const productData: Product = {
     id: product.id,
@@ -426,6 +427,7 @@ const upsertProductRecord = async (product: Stripe.Product) => {
   console.log(`Product inserted/updated: ${product.id}`);
 };
 
+// Upsert a price into Supabase
 const upsertPriceRecord = async (price: Stripe.Price) => {
   const priceData: Price = {
     id: price.id,
@@ -447,6 +449,7 @@ const upsertPriceRecord = async (price: Stripe.Price) => {
   console.log(`Price inserted/updated: ${price.id}`);
 };
 
+// Create or retrieve a Stripe customer
 const createOrRetrieveCustomer = async ({
   email,
   uuid,
@@ -479,7 +482,7 @@ const createOrRetrieveCustomer = async ({
   return data.stripe_customer_id;
 };
 
-// Helper to convert nulls to undefined for Stripe
+// Helper: sanitize Stripe address
 const sanitizeAddress = (address: Stripe.Address) => ({
   line1: address.line1 ?? undefined,
   line2: address.line2 ?? undefined,
@@ -489,6 +492,7 @@ const sanitizeAddress = (address: Stripe.Address) => ({
   country: address.country ?? undefined,
 });
 
+// Copy billing details from Stripe PaymentMethod to Supabase user & Stripe customer
 const copyBillingDetailsToCustomer = async (
   uuid: string,
   payment_method: Stripe.PaymentMethod
@@ -496,32 +500,32 @@ const copyBillingDetailsToCustomer = async (
   const customer = payment_method.customer as string;
   const { name, phone, address } = payment_method.billing_details;
 
-  if (!name || !phone || !address) return;
+  if (!name && !phone && !address) return;
 
   await stripe.customers.update(customer, {
     name,
     phone,
-    address: sanitizeAddress(address),
+    address: address ? sanitizeAddress(address) : undefined,
   });
 
   const { error } = await supabaseAdmin
     .from("users")
     .update({
-      billing_address: { ...address },
-      payment_method: {
-        ...payment_method[payment_method.type ?? "card"],
-      },
+      billing_address: address ?? null,
+      payment_method: payment_method[payment_method.type ?? "card"] ?? null,
     })
     .eq("id", uuid);
 
   if (error) throw error;
 };
 
+// Manage subscription status change
 const manageSubscriptionStatusChange = async (
   subscriptionId: string,
   customerId: string,
   createAction = false
 ) => {
+  // Get Supabase customer UUID
   const { data: customerData, error: noCustomerError } = await supabaseAdmin
     .from("customers")
     .select("id")
@@ -529,14 +533,15 @@ const manageSubscriptionStatusChange = async (
     .single();
 
   if (noCustomerError) throw noCustomerError;
-
   const uuid = customerData.id;
 
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-    expand: ["default_payment_method"],
-  });
+  // Retrieve Stripe subscription
+  const subscription: Stripe.Subscription = await stripe.subscriptions.retrieve(
+    subscriptionId,
+    { expand: ["default_payment_method"] }
+  );
 
-  // Safe conversion of dates
+  // Safe fallback dates
   const createdDate = toDateTime(subscription.created) ?? new Date();
   const fallbackStart = createdDate.toISOString();
   const fallbackEnd = new Date(
@@ -573,11 +578,11 @@ const manageSubscriptionStatusChange = async (
   const { error } = await supabaseAdmin
     .from("subscriptions")
     .upsert([subscriptionData]);
-
   if (error) throw error;
 
   console.log(`Updated subscription [${subscription.id}] for user ${uuid}`);
 
+  // Optionally copy billing details
   if (createAction && subscription.default_payment_method && uuid) {
     await copyBillingDetailsToCustomer(
       uuid,
