@@ -171,7 +171,108 @@
 
 // export default usePlayer;
 
-//-------------------------------------------------------
+//*-------------------------------------------------------
+// import { create } from "zustand";
+
+// interface PlayerStore {
+//   ids: string[];
+//   activeId?: string;
+//   activeIndex: number;
+//   isPlaying: boolean;
+//   setId: (id: string) => void;
+//   setIds: (ids: string[]) => void;
+//   togglePlay: () => void;
+//   setPlaying: (state: boolean) => void;
+//   next: () => void;
+//   previous: () => void;
+//   reset: () => void;
+//   audio?: HTMLAudioElement;
+// }
+
+// const usePlayer = create<PlayerStore>((set, get) => ({
+//   ids: [],
+//   activeId: undefined,
+//   activeIndex: -1,
+//   isPlaying: false,
+//   audio: undefined,
+
+//   setIds: (ids) => set({ ids }),
+
+//   setId: (id) => {
+//     const index = get().ids.findIndex((songId) => songId === id);
+//     const songUrl = `/songs/${id}.mp3`;
+
+//     if (!get().audio) {
+//       const newAudio = new Audio(songUrl);
+//       newAudio.play();
+//       set({
+//         audio: newAudio,
+//         activeId: id,
+//         activeIndex: index,
+//         isPlaying: true,
+//       });
+//     } else {
+//       get().audio.pause();
+//       get().audio.src = songUrl;
+//       get().audio.play();
+//       set({ activeId: id, activeIndex: index, isPlaying: true });
+//     }
+//   },
+
+//   togglePlay: () => {
+//     const audio = get().audio;
+//     if (!audio) return;
+
+//     if (get().isPlaying) {
+//       audio.pause();
+//       set({ isPlaying: false });
+//     } else {
+//       audio.play();
+//       set({ isPlaying: true });
+//     }
+//   },
+
+//   setPlaying: (state) => {
+//     const audio = get().audio;
+//     if (!audio) return;
+
+//     if (state) audio.play();
+//     else audio.pause();
+
+//     set({ isPlaying: state });
+//   },
+
+//   next: () => {
+//     const { ids, activeIndex } = get();
+//     if (ids.length === 0) return;
+//     const nextIndex = (activeIndex + 1) % ids.length;
+//     const nextId = ids[nextIndex];
+//     get().setId(nextId);
+//   },
+
+//   previous: () => {
+//     const { ids, activeIndex } = get();
+//     if (ids.length === 0) return;
+//     const prevIndex = (activeIndex - 1 + ids.length) % ids.length;
+//     const prevId = ids[prevIndex];
+//     get().setId(prevId);
+//   },
+
+//   reset: () => {
+//     get().audio?.pause();
+//     set({
+//       ids: [],
+//       activeId: undefined,
+//       activeIndex: -1,
+//       isPlaying: false,
+//       audio: undefined,
+//     });
+//   },
+// }));
+
+// export default usePlayer;
+
+//*-------------------------------------------------
 import { create } from "zustand";
 
 interface PlayerStore {
@@ -186,7 +287,7 @@ interface PlayerStore {
   next: () => void;
   previous: () => void;
   reset: () => void;
-  audio?: HTMLAudioElement;
+  audio: HTMLAudioElement | null;
 }
 
 const usePlayer = create<PlayerStore>((set, get) => ({
@@ -194,15 +295,16 @@ const usePlayer = create<PlayerStore>((set, get) => ({
   activeId: undefined,
   activeIndex: -1,
   isPlaying: false,
-  audio: undefined,
+  audio: null,
 
   setIds: (ids) => set({ ids }),
 
   setId: (id) => {
     const index = get().ids.findIndex((songId) => songId === id);
     const songUrl = `/songs/${id}.mp3`;
+    const audio = get().audio;
 
-    if (!get().audio) {
+    if (!audio) {
       const newAudio = new Audio(songUrl);
       newAudio.play();
       set({
@@ -212,9 +314,9 @@ const usePlayer = create<PlayerStore>((set, get) => ({
         isPlaying: true,
       });
     } else {
-      get().audio.pause();
-      get().audio.src = songUrl;
-      get().audio.play();
+      audio.pause();
+      audio.src = songUrl;
+      audio.play();
       set({ activeId: id, activeIndex: index, isPlaying: true });
     }
   },
@@ -265,7 +367,7 @@ const usePlayer = create<PlayerStore>((set, get) => ({
       activeId: undefined,
       activeIndex: -1,
       isPlaying: false,
-      audio: undefined,
+      audio: null,
     });
   },
 }));
