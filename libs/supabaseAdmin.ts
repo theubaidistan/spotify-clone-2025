@@ -559,6 +559,16 @@ const manageSubscriptionStatusChange = async (
     createdDate.getTime() + 30 * 24 * 60 * 60 * 1000
   ).toISOString();
 
+  // Safe access for current period
+  const currentPeriodStart =
+    "current_period_start" in subscription
+      ? subscription.current_period_start
+      : subscription.created;
+  const currentPeriodEnd =
+    "current_period_end" in subscription
+      ? subscription.current_period_end
+      : subscription.created + 30 * 24 * 60 * 60; // 30 days fallback
+
   const subscriptionData: Database["public"]["Tables"]["subscriptions"]["Insert"] =
     {
       id: subscription.id,
@@ -573,11 +583,9 @@ const manageSubscriptionStatusChange = async (
       canceled_at: toDateTime(subscription.canceled_at)?.toISOString() ?? null,
 
       current_period_start:
-        toDateTime(subscription.current_period_start)?.toISOString() ??
-        fallbackStart,
+        toDateTime(currentPeriodStart)?.toISOString() ?? fallbackStart,
       current_period_end:
-        toDateTime(subscription.current_period_end)?.toISOString() ??
-        fallbackEnd,
+        toDateTime(currentPeriodEnd)?.toISOString() ?? fallbackEnd,
 
       created: toDateTime(subscription.created)?.toISOString() ?? fallbackStart,
       ended_at: toDateTime(subscription.ended_at)?.toISOString() ?? null,
