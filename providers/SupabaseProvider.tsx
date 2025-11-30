@@ -35,13 +35,12 @@ interface SupabaseProviderProps {
 }
 
 const SupabaseProvider: React.FC<SupabaseProviderProps> = ({ children }) => {
-  // Explicitly type the Supabase client to satisfy SessionContextProvider
   const [supabaseClient] = useState(() =>
     createClientComponentClient<Database>()
   );
 
   return (
-    <SessionContextProvider<Database, "public"> supabaseClient={supabaseClient}>
+    <SessionContextProvider supabaseClient={supabaseClient}>
       {children}
     </SessionContextProvider>
   );
