@@ -502,9 +502,10 @@ const copyBillingDetailsToCustomer = async (
 
   if (!name && !phone && !address) return;
 
+  // Fix: convert null to undefined for Stripe update
   await stripe.customers.update(customer, {
-    name,
-    phone,
+    name: name ?? undefined,
+    phone: phone ?? undefined,
     address: address ? sanitizeAddress(address) : undefined,
   });
 
